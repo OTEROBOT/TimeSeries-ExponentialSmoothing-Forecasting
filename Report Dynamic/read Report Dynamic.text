@@ -1,0 +1,22 @@
+โฟลเดอร์นี้คือ Dashboard แบบ Interactive
+ผู้ใช้สามารถทดลองปรับค่า model ได้แบบ Real-time โดยไม่ต้องติดตั้งอะไรเพิ่ม
+
+ไฟล์หลัก
+
+dashboard.html
+✔ Dashboard แบบไดนามิก
+✔ เปลี่ยนโมเดล SES/Holt/Holt-Winters/ARIMA ได้
+✔ ปรับค่า α, β, γ, period, horizon ได้
+✔ มีกราฟ Plotly interactive
+✔ มี Dark Mode
+✔ ใช้ได้แบบ Offline 100%
+
+เหมาะสำหรับ
+
+Presentation แบบโชว์ความเทพ
+
+ให้ครูลองเล่นสด
+
+อธิบาย “ผลลัพธ์เปลี่ยนตามค่า parameter” แบบเห็นภาพทันที
+
+ทำให้โปรเจคดู professional มากกว่างานทั่วไป
