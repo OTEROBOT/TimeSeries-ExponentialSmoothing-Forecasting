@@ -1,0 +1,303 @@
+<!-- Time Series Forecasting Report -->
+
+<!-- หน้าเว็ปออฟไลน์แบบธรรมดาสำเร็จรูประบบคำนวนทุกอย่างออกมาแล้วไม่สามารถเปลี่ยนแปลงค่าได้ -->
+
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Time Series Forecasting Report - ProductP4</title>
+
+<!-- Font -->
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ---------------------- GLOBAL ---------------------- */
+body {
+    font-family: 'Kanit', sans-serif;
+    background: #eef5ff;
+    margin: 0;
+    padding: 0;
+    color: #2d3436;
+    line-height: 1.7;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* Dark Mode */
+body.dark {
+    background: #1e272e;
+    color: #dfe6e9;
+}
+
+/* ---------------------- HEADER ---------------------- */
+header {
+    background: linear-gradient(135deg, #0984e3, #00b894);
+    padding: 60px 20px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    margin-bottom: 30px;
+}
+
+h1 { font-size: 2.7rem; margin: 0; }
+h2 {
+    color: #2d68b0;
+    font-size: 1.9rem;
+    border-bottom: 4px solid #74b9ff;
+    padding-bottom: 10px;
+    display: inline-block;
+}
+body.dark h2 {
+    color: #81ecec;
+    border-bottom-color: #00cec9;
+}
+
+/* ---------------------- CONTAINER ---------------------- */
+.container {
+    max-width: 1150px;
+    margin: 0 auto;
+    padding: 0 20px 50px 20px;
+}
+
+/* ---------------------- SECTIONS ---------------------- */
+.section {
+    background: white;
+    padding: 40px;
+    margin-bottom: 40px;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    transition: background 0.3s;
+}
+
+body.dark .section {
+    background: #2d3436;
+}
+
+/* ---------------------- CARDS ---------------------- */
+.highlight {
+    background: linear-gradient(120deg, #a8e6cf, #dcedc1);
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 8px solid #00b894;
+    margin: 25px 0;
+    font-size: 1.1rem;
+}
+body.dark .highlight {
+    background: #344b43;
+    border-left-color: #55efc4;
+}
+
+.winner {
+    background: linear-gradient(120deg, #ffeaa7, #fff3cd);
+    border-left: 8px solid #fdcb6e;
+}
+body.dark .winner {
+    background: #5f4f32;
+    border-left-color: #ffeaa7;
+}
+
+.card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    margin: 20px 0;
+}
+body.dark .card {
+    background: #3c3c3c;
+    border-color: #555;
+}
+
+/* ---------------------- TABLE ---------------------- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 1.1rem;
+}
+th {
+    background: #74b9ff;
+    color: white;
+    padding: 16px;
+}
+td {
+    padding: 14px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+tr:nth-child(even) { background: #f5f9ff; }
+.best { background: #00b894 !important; color: white; }
+
+body.dark th { background: #0984e3; }
+body.dark td { border-color: #555; }
+body.dark tr:nth-child(even) { background: #3a3a3a; }
+
+/* ---------------------- IMAGES ---------------------- */
+img {
+    width: 100%;
+    border-radius: 14px;
+    margin: 25px 0;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+
+/* If Image Missing */
+img:not([src])::after,
+img[src=""]::after {
+    content: "❌ ไม่พบไฟล์รูปในโฟลเดอร์ output_report/";
+    color: red;
+    font-weight: bold;
+    display: block;
+}
+
+/* ---------------------- DARK MODE BUTTON ---------------------- */
+.toggle-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #0984e3;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+body.dark .toggle-btn {
+    background: #00b894;
+}
+
+/* ---------------------- FOOTER ---------------------- */
+footer {
+    text-align: center;
+    color: #636e72;
+    padding: 40px 20px;
+}
+body.dark footer {
+    color: #b2bec3;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="toggle-btn" onclick="toggleDarkMode()">🌙 / ☀️</div>
+
+<header>
+    <h1>Time Series Forecasting Report</h1>
+    <p style="font-size:1.3rem; opacity:0.95;">ProductP4 • รายงานพยากรณ์ 4 โมเดลยอดนิยม</p>
+</header>
+
+<div class="container">
+
+<!-- 1. Overview -->
+<div class="section">
+    <h2>1. ภาพรวมข้อมูล</h2>
+
+    <p>ProductP4 เป็นข้อมูลขายรายวัน (Daily) ที่มี:</p>
+    <ul>
+        <li>แนวโน้ม (Trend)</li>
+        <li>ฤดูกาลรายสัปดาห์ (Seasonality = 7 วัน)</li>
+        <li>ข้อมูลอธิบายเพิ่มเติม เช่น ราคา และอุณหภูมิ</li>
+    </ul>
+
+    <div class="highlight">
+        ✔ แบ่งข้อมูล Train = 70% • Test = 30% (ตามลำดับเวลา)<br>
+        ✔ ใช้โมเดล: SES, Holt, Holt-Winters, ARIMA<br>
+        ✔ ใช้ผลจริงจากไฟล์ separate.py ของคุณ
+    </div>
+</div>
+
+<!-- 2. Forecast Plot -->
+<div class="section">
+    <h2>2. กราฟเปรียบเทียบผลพยากรณ์</h2>
+
+    <p>เส้นประคือผลพยากรณ์ — เปรียบเทียบกับข้อมูลจริง (สีส้ม/น้ำเงิน)</p>
+
+    <img src="output_report/forecast_comparison.png" onerror="this.style.display='none'">
+
+    <div class="winner">
+        Holt-Winters (สีเขียว) เกาะข้อมูลจริงได้ดีที่สุด → ชนะทุกด้าน
+    </div>
+</div>
+
+<!-- 3. Accuracy Table -->
+<div class="section">
+    <h2>3. ความแม่นยำของโมเดล (Error Metrics)</h2>
+
+    <table>
+        <tr>
+            <th>โมเดล</th>
+            <th>MAE</th>
+            <th>RMSE</th>
+            <th>MAPE (%)</th>
+        </tr>
+        <tr class="best">
+            <td><b>Holt-Winters</b></td>
+            <td>24.53</td>
+            <td>29.44</td>
+            <td>34.51%</td>
+        </tr>
+        <tr><td>SES</td><td>24.07</td><td>31.21</td><td>49.26%</td></tr>
+        <tr><td>ARIMA</td><td>25.83</td><td>32.07</td><td>54.33%</td></tr>
+        <tr><td>Holt</td><td>28.89</td><td>37.26</td><td>43.02%</td></tr>
+    </table>
+
+    <div class="highlight winner">
+        ✔ Holt-Winters ชนะเพราะจับได้ทั้ง Trend + Seasonality
+    </div>
+</div>
+
+<!-- 4. Diagnostics -->
+<div class="section">
+    <h2>4. Diagnostics: ตรวจสุขภาพโมเดล</h2>
+
+    <p>Residuals ที่ดีต้องสุ่มกระจายรอบ 0</p>
+
+    <h3>Holt-Winters (ดีที่สุด)</h3>
+    <img src="output_report/HoltWinters_diagnostics.png">
+
+    <h3>SES</h3>
+    <img src="output_report/SES_diagnostics.png">
+
+    <h3>Holt</h3>
+    <img src="output_report/Holt_diagnostics.png">
+
+    <h3>ARIMA</h3>
+    <img src="output_report/ARIMA_diagnostics.png">
+</div>
+
+<!-- 5. Summary -->
+<div class="section">
+    <h2>5. สรุปผล</h2>
+
+    <div class="winner" style="font-size:1.3rem; text-align:center; padding:30px;">
+        🎉 สรุป: Holt-Winters ทำงานดีที่สุดสำหรับ ProductP4  
+        เพราะข้อมูลมี Seasonality 7 วันชัดเจน
+    </div>
+
+    <div class="card">
+        <b>คำแนะนำสำหรับใช้งานจริง:</b>
+        <ul>
+            <li>ใช้ Holt-Winters (additive) เป็นโมเดลหลัก</li>
+            <li>อัปเดตโมเดลทุกสัปดาห์</li>
+            <li>พิจารณา SARIMAX ถ้าต้องการใช้ price/temperature ร่วมด้วย</li>
+        </ul>
+    </div>
+</div>
+
+</div>
+
+<footer>
+    รายงานสร้างอัตโนมัติด้วย separate.py — ใช้งานออฟไลน์ได้สมบูรณ์แบบ
+</footer>
+
+<script>
+function toggleDarkMode() {
+    document.body.classList.toggle("dark");
+}
+</script>
+
+</body>
+</html>

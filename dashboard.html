@@ -1,0 +1,372 @@
+<!-- Dynamic Time Series Forecasting Dashboard -->
+
+<!-- เป็นหน้าเว็ปแบบไดนามิกที่สามารถเปลี่ยนค่าต่างๆได้สำหรับการพยากร์สินค้า P4 ชิ้นเดียว -->
+
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dynamic Time Series Forecasting Dashboard</title>
+
+<!-- Google font -->
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<!-- Tailwind CDN for quick utilities -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Plotly for interactive charts -->
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<style>
+  body { font-family: "Kanit", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f3f6fb; color:#1e293b; }
+  .dark body { background:#0f1724; color:#e6eef8; }
+  header { background: linear-gradient(135deg,#0ea5e9,#10b981); color:white; padding:36px 18px; text-align:center; border-bottom-left-radius:14px; border-bottom-right-radius:14px; box-shadow: 0 8px 30px rgba(2,6,23,0.08); }
+  .card { background:white; border-radius:12px; padding:18px; box-shadow: 0 6px 18px rgba(15,23,42,0.06); }
+  .dark .card { background:#111827; box-shadow: 0 6px 18px rgba(2,6,23,0.35); }
+  .badge { display:inline-block; padding:6px 10px; background:#eef2ff; color:#0b61d1; border-radius:999px; font-weight:600; }
+  .small { font-size:0.92rem; color:#475569; }
+  .muted { color:#64748b; }
+  .toggle-btn { position:fixed; right:18px; top:18px; z-index:60; background:#0ea5e9; color:white; padding:10px 12px; border-radius:10px; cursor:pointer; box-shadow:0 6px 18px rgba(2,6,23,0.12); }
+  .dark .toggle-btn { background:#10b981; }
+  footer { text-align:center; color:#94a3b8; padding:30px 10px; }
+  /* responsive image placeholder if no plot */
+  #chart { min-height:380px; }
+  label { font-weight:600; color:#0f1724; }
+  .muted-small { color:#94a3b8; font-size:0.95rem; }
+</style>
+</head>
+<body class="antialiased">
+
+<button class="toggle-btn" onclick="toggleDarkMode()">🌙 / ☀️</button>
+
+<header>
+  <h1 class="text-3xl font-semibold">Dynamic Time Series Forecasting Dashboard</h1>
+  <p class="muted mt-1">Interactive • Offline • SES / Holt / Holt-Winters / ARIMA • ปรับพารามิเตอร์แบบเรียลไทม์</p>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-8 grid lg:grid-cols-3 gap-6">
+  <!-- Controls -->
+  <section class="card lg:col-span-1">
+    <h2 class="text-xl font-semibold">Controls</h2>
+    <p class="small muted mt-1">เลือกสินค้า, โมเดล, และปรับพารามิเตอร์</p>
+
+    <div class="mt-4">
+      <label for="productSelect">เลือกสินค้า (Product)</label>
+      <select id="productSelect" class="w-full mt-2 p-2 rounded border">
+        <option value="P1">Product P1</option>
+        <option value="P2">Product P2</option>
+        <option value="P3">Product P3</option>
+        <option value="P4" selected>Product P4</option>
+        <option value="P5">Product P5</option>
+      </select>
+    </div>
+
+    <div class="mt-4">
+      <label for="modelSelect">เลือกโมเดล (Model)</label>
+      <select id="modelSelect" class="w-full mt-2 p-2 rounded border">
+        <option value="ses">SES</option>
+        <option value="holt">Holt</option>
+        <option value="holtwinters" selected>Holt-Winters</option>
+        <option value="arima">ARIMA (simplified)</option>
+      </select>
+    </div>
+
+    <div class="mt-4">
+      <label>Alpha (α) <span id="alphaVal" class="muted-small ml-2">0.50</span></label>
+      <input id="alpha" type="range" min="0" max="1" step="0.01" value="0.5" class="w-full mt-2">
+
+      <label class="mt-3">Beta (β) <span id="betaVal" class="muted-small ml-2">0.30</span></label>
+      <input id="beta" type="range" min="0" max="1" step="0.01" value="0.3" class="w-full mt-2">
+
+      <label class="mt-3">Gamma (γ) <span id="gammaVal" class="muted-small ml-2">0.30</span></label>
+      <input id="gamma" type="range" min="0" max="1" step="0.01" value="0.3" class="w-full mt-2">
+
+      <label class="mt-3">Seasonal period</label>
+      <input id="period" type="number" value="7" class="w-full mt-2 p-2 rounded border">
+
+      <label class="mt-3">Forecast horizon (steps)</label>
+      <input id="horizon" type="number" value="30" class="w-full mt-2 p-2 rounded border">
+
+      <button onclick="updateDashboard()" class="mt-4 w-full bg-blue-600 text-white py-2 rounded shadow">🔄 Update Forecast</button>
+    </div>
+
+    <div class="mt-6 small muted">
+      <p><strong>Note:</strong> ตัวอย่างฝังข้อมูลไว้แล้ว — แทนที่ด้วยข้อมูลจริงโดยการวาง array ของค่าต่อเนื่อง (ดูด้านล่าง)</p>
+    </div>
+  </section>
+
+  <!-- Chart -->
+  <section class="card lg:col-span-2">
+    <div class="flex items-start justify-between">
+      <div>
+        <h2 class="text-xl font-semibold">Forecast Graph</h2>
+        <p class="muted-small">Interactive — zoom, pan, hover</p>
+      </div>
+      <div class="badge">Train/Test: 70% / 30%</div>
+    </div>
+
+    <div id="chart" class="mt-4"></div>
+
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="p-3 rounded border">
+        <div class="muted-small">MAE</div>
+        <div id="mae" class="text-xl font-semibold mt-1">-</div>
+      </div>
+      <div class="p-3 rounded border">
+        <div class="muted-small">RMSE</div>
+        <div id="rmse" class="text-xl font-semibold mt-1">-</div>
+      </div>
+      <div class="p-3 rounded border">
+        <div class="muted-small">MAPE</div>
+        <div id="mape" class="text-xl font-semibold mt-1">-</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Explanation / Tips -->
+  <section class="card lg:col-span-3">
+    <h2 class="text-xl font-semibold">คำอธิบาย & คำแนะนำ</h2>
+    <div class="mt-3 grid gap-3">
+      <div>
+        <strong>การอ่านกราฟ</strong>
+        <p class="muted-small">เส้นสีน้ำเงิน = ข้อมูล Train (อดีต), เส้นสีส้ม = ข้อมูล Test (จริงที่ใช้ตรวจ), เส้นประ = ผลพยากรณ์ของโมเดลที่เลือก</p>
+      </div>
+
+      <div>
+        <strong>คำแนะนำ</strong>
+        <ul class="muted-small list-disc ml-5">
+          <li>ถ้าข้อมูลมี seasonality (เช่น weekly) ให้ใช้ Holt-Winters</li>
+          <li>SES เหมาะกับ series ที่ไม่มี trend/seasonality</li>
+          <li>Holt เหมาะกับ trend แต่ไม่มี seasonality</li>
+          <li>ARIMA (simplified) ใช้เป็น baseline แต่ SARIMA/SARIMAX จริงจังกว่าถ้ามี seasonality/exog</li>
+        </ul>
+      </div>
+
+      <div>
+        <strong>ใช้ข้อมูลจริง (CSV → JSON)</strong>
+        <p class="muted-small">ถ้าคุณมีไฟล์ CSV, ให้แปลงคอลัมน์ค่าที่ต้องการเป็น array (ค่าต่อเนื่อง ตามลำดับเวลา) แล้วแทนค่าในตัวแปร `dataset` ด้านล่าง (ดูตัวอย่างสั้น ๆ ข้างล่างสุดของไฟล์)</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Report generated offline • เปิดใน Chrome เพื่อการทำงานดีที่สุด
+</footer>
+
+<!-- =========================
+     SCRIPT: models + dashboard logic
+     ========================= -->
+<script>
+/* ------------------------
+   EMBEDDED SAMPLE DATA
+   (แทนที่ด้วยข้อมูลจริงได้ง่าย ๆ)
+   รูปแบบ: dataset.P4 = [v1, v2, v3, ...] (เรียงตามเวลา)
+-------------------------*/
+const dataset = {
+  P1: [113,74,116,70,141,150,160,155,149,170,165,172,180,179,185,190,195,200,210,205],
+  P2: [50,48,52,49,51,53,55,54,56,57,58,59,61,60,62,63,64,65,66,67],
+  P3: [210,215,220,225,223,228,230,240,250,260,255,258,265,270,280,285,290,295,300,305],
+  P4: [113,74,116,70,141,159,185,170,200,195,210,220,230,200,180,175,190,210,215,225,235,240,230,220,210,205,215,225,235,245],
+  P5: [500,510,520,530,525,540,550,548,560,570,575,580,590,600,610,615,620,625,630,635]
+};
+
+/* ------------------------
+   UTILITIES
+-------------------------*/
+const mean = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
+const mae = (a,f) => mean(a.map((v,i)=>Math.abs(v-f[i])));
+const rmse = (a,f) => Math.sqrt(mean(a.map((v,i)=>Math.pow(v-f[i],2))));
+const mape = (a,f) => mean(a.map((v,i)=>Math.abs((v-f[i])/v))) * 100;
+
+/* ------------------------
+   MODELS (JS implementations)
+   - SES, Holt, Holt-Winters, simplified ARIMA(0,1,1)
+-------------------------*/
+function SES(data, alpha, horizon){
+  let level = data[0];
+  for(let t=1;t<data.length;t++) level = alpha*data[t] + (1-alpha)*level;
+  return Array(horizon).fill(level);
+}
+
+function Holt(data, alpha, beta, horizon){
+  let level = data[0];
+  let trend = data[1] - data[0];
+  for(let t=1;t<data.length;t++){
+    let prev = level;
+    level = alpha*data[t] + (1-alpha)*(level + trend);
+    trend = beta*(level - prev) + (1-beta)*trend;
+  }
+  return Array.from({length:horizon},(_,i)=> level + (i+1)*trend);
+}
+
+function HoltWinters(data, alpha, beta, gamma, period, horizon){
+  if(data.length < period*2) {
+    alert("ข้อมูลสั้นเกินไปสำหรับ Holt-Winters (ต้องมีอย่างน้อย 2 seasons).");
+    return [];
+  }
+  const season = Array(period).fill(0);
+  const nSeasons = Math.floor(data.length / period);
+  // initial season indices
+  const seasonalAvg = [];
+  for(let s=0;s<nSeasons;s++){
+    seasonalAvg.push(mean(data.slice(s*period, (s+1)*period)));
+  }
+  for(let i=0;i<period;i++){
+    let sum = 0;
+    for(let s=0;s<nSeasons;s++){
+      sum += data[i + s*period] - seasonalAvg[s];
+    }
+    season[i] = sum / nSeasons;
+  }
+  let level = data[0];
+  let trend = (data[period] - data[0]) / period;
+  for(let t=0;t<data.length;t++){
+    const val = data[t];
+    const lastLevel = level;
+    const lastSeason = season[t % period];
+    level = alpha * (val - lastSeason) + (1-alpha)*(level + trend);
+    trend = beta * (level - lastLevel) + (1-beta)*trend;
+    season[t % period] = gamma * (val - level) + (1-gamma)*lastSeason;
+  }
+  return Array.from({length:horizon},(_,i)=> level + (i+1)*trend + season[(data.length + i) % period]);
+}
+
+function ARIMA_simplified(data, horizon){
+  const diffs = [];
+  for(let i=1;i<data.length;i++) diffs.push(data[i] - data[i-1]);
+  const lastD = diffs[diffs.length - 1];
+  const theta = 0.5;
+  let last = data[data.length -1];
+  const out = [];
+  for(let i=0;i<horizon;i++){
+    last = last + lastD * theta;
+    out.push(last);
+  }
+  return out;
+}
+
+function runModel(model, data, params){
+  if(model === "ses") return SES(data, params.alpha, params.horizon);
+  if(model === "holt") return Holt(data, params.alpha, params.beta, params.horizon);
+  if(model === "holtwinters") return HoltWinters(data, params.alpha, params.beta, params.gamma, params.period, params.horizon);
+  if(model === "arima") return ARIMA_simplified(data, params.horizon);
+  return [];
+}
+
+/* ------------------------
+   Train/Test split helper
+-------------------------*/
+function trainTestSplit(data, ratio=0.7){
+  const n = data.length;
+  const nTrain = Math.max(1, Math.floor(n * ratio));
+  const train = data.slice(0,nTrain);
+  const test  = data.slice(nTrain);
+  return {train, test, nTrain, nTest: test.length};
+}
+
+/* ------------------------
+   Plot + Dashboard functions
+-------------------------*/
+function drawChart(data, forecast, modelName){
+  const {train, test, nTrain} = trainTestSplit(data, 0.7);
+  const n = data.length;
+  const x_all = Array.from({length:n}, (_,i)=> i+1);
+  const x_train = x_all.slice(0,nTrain);
+  const x_test = x_all.slice(nTrain);
+  const x_fore = Array.from({length: forecast.length}, (_,i)=> n + i + 1);
+
+  const traces = [
+    { x: x_train, y: train, mode:'lines+markers', name:'Train (actual)', line:{color:'#1f77b4'} },
+    { x: x_test,  y: test,  mode:'lines+markers', name:'Test (actual)',  line:{color:'#ff7f0e'} },
+    { x: x_fore,  y: forecast, mode:'lines+markers', name: modelName + ' forecast', line:{dash:'dash', color:'#2ca02c'} }
+  ];
+
+  const layout = {
+    title: `Forecast vs Actual — ${modelName}`,
+    xaxis: {title:'Time (index)'},
+    yaxis: {title:'Value'},
+    legend: {orientation:'h'},
+    margin: {t:60, b:60, l:60, r:20},
+    shapes: [
+      { type:'rect', xref:'x', yref:'paper', x0: x_test[0] || n+1, x1: x_all[n-1], y0:0, y1:1, fillcolor:'rgba(255,127,14,0.06)', line:{width:0}}
+    ]
+  };
+
+  Plotly.newPlot('chart', traces, layout, {responsive:true});
+}
+
+function updateDashboard(){
+  const product = document.getElementById('productSelect').value;
+  const model   = document.getElementById('modelSelect').value;
+  const alpha   = parseFloat(document.getElementById('alpha').value);
+  const beta    = parseFloat(document.getElementById('beta').value);
+  const gamma   = parseFloat(document.getElementById('gamma').value);
+  const period  = parseInt(document.getElementById('period').value);
+  const horizon = parseInt(document.getElementById('horizon').value);
+
+  document.getElementById('alphaVal').innerText = alpha.toFixed(2);
+  document.getElementById('betaVal').innerText  = beta.toFixed(2);
+  document.getElementById('gammaVal').innerText = gamma.toFixed(2);
+
+  const data = dataset[product];
+  if(!data || data.length < 8){
+    alert('ข้อมูลสั้นเกินไปสำหรับการพยากรณ์ — กรุณาแทน dataset ด้วยค่าจริง (>= 20 จุดแนะนำ)');
+    return;
+  }
+
+  const fc = runModel(model, data, {alpha,beta,gamma,period,horizon});
+  drawChart(data, fc, model.toUpperCase());
+
+  // compute errors on test slice
+  const {test} = trainTestSplit(data, 0.7);
+  const compareLen = Math.min(test.length, fc.length);
+  const actualForTest = test.slice(0, compareLen);
+  const forecastForTest = fc.slice(0, compareLen);
+
+  if(compareLen > 0){
+    document.getElementById('mae').innerText  = mae(actualForTest, forecastForTest).toFixed(3);
+    document.getElementById('rmse').innerText = rmse(actualForTest, forecastForTest).toFixed(3);
+    document.getElementById('mape').innerText = mape(actualForTest, forecastForTest).toFixed(2) + '%';
+  } else {
+    document.getElementById('mae').innerText = '-';
+    document.getElementById('rmse').innerText = '-';
+    document.getElementById('mape').innerText = '-';
+  }
+}
+
+/* connect sliders for live display */
+document.getElementById('alpha').addEventListener('input', e => document.getElementById('alphaVal').innerText = parseFloat(e.target.value).toFixed(2));
+document.getElementById('beta').addEventListener('input', e => document.getElementById('betaVal').innerText = parseFloat(e.target.value).toFixed(2));
+document.getElementById('gamma').addEventListener('input', e => document.getElementById('gammaVal').innerText = parseFloat(e.target.value).toFixed(2));
+
+window.addEventListener('DOMContentLoaded', () => {
+  // initial render
+  updateDashboard();
+});
+
+/* Helper: toggle dark mode behavior */
+function toggleDarkMode(){
+  document.documentElement.classList.toggle('dark');
+  document.body.classList.toggle('dark');
+}
+</script>
+
+<!-- =========================
+     QUICK: How to replace dataset with real CSV (Python snippet)
+     ========================= -->
+<!--
+If you want to convert your CSV column to JSON array, run this small Python and paste the printed array into dataset.P4:
+
+import pandas as pd
+df = pd.read_csv("time series data.csv")   # or your csv path
+# choose the Product column you want, e.g. 'ProductP4'
+arr = df['ProductP4'].tolist()
+print(arr)
+
+Then replace dataset.P4 = [ ... ] with the printed array.
+-->
+
+</body>
+</html>
